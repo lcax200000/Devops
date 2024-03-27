@@ -1,0 +1,17 @@
+- hosts: tdengine_servers
+  become: yes
+  tasks:
+  - name: Upload RPM package to remote server
+    copy:
+      src: /home/vagrant/TDengine-server-3.2.3.0-Linux-x64.rpm
+      dest: /tmp/TDengine-server-3.2.3.0-Linux-x64.rpm
+  - name: Install RPM package
+    expect:
+     command: rpm -i /tmp/TDengine-server-3.2.3.0-Linux-x64.rpm
+     responses:
+       'Enter FQDN': 'master:6030'
+       'Enter your email address': ''
+  - name: Start service tdengine
+    service:
+      name: taosd
+      state: started 
