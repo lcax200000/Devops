@@ -1,6 +1,10 @@
 - hosts: tdengine_servers
   become: yes
   tasks:
+  - name: Get self hostname
+    shell: "hostname"
+    delegate_to: localhost
+    register: self_hostname
   - name: Upload RPM package to remote server
     copy:
       src: /home/vagrant/TDengine-server-3.2.3.0-Linux-x64.rpm
@@ -9,8 +13,13 @@
     expect:
      command: rpm -i /tmp/TDengine-server-3.2.3.0-Linux-x64.rpm
      responses:
-       'Enter FQDN': 'master:6030'
+       'Enter FQDN': '{{ self_hostname.stdout }}:6030'
        'Enter your email address': ''
+  - name: Configure TDengine FQDN
+    lineinfile:
+      path: /etc/taos/taos.cfg
+      regexp: '^# fqdn'
+      line: 'fqdn {{ ansible_hostname }}'
   - name: Start service tdengine
     service:
       name: taosd
