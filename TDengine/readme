@@ -1,0 +1,15 @@
+This project involves deploying the master node of TDengine using Ansible and remotely adding a dnode node to enter the cluster.
+Firstly, ensure SSH interconnection between hosts, and ensure that each node has installed Python 3 and Python 3's pexcept module (ansible module dependency).
+Prepare:
+1. Add the host name and IP of the master to/etc/issue/hosts, with the group name "tdengine_master".
+2. Add the host name and IP address of the cluster nodes to/etc/individual/hosts, with the group name "tdengine_nodes".
+3. Add the IP and host names of all nodes in the cluster to the Ansible/tdengine_files/config/hosts file in the format of "IP host name", and Ansible will automatically synchronize to the/etc/hosts of all deployed nodes.
+4. Configure the TDengine template configuration file Ansible/tdengine_files/config/templet_conf as needed, and add the TDengine configuration items that need to be changed to the file (such as whether to turn on monitoring, the fqdn of the monitoring cluster, listening ports, etc.). Ansible will be replaced in the TDengine configuration file during deployment. For TDengine configuration parameters, please refer to: https://docs.taosdata.com/reference/config .
+Create cluster:
+Run "ansible-playbook deploy_master.yaml" on the master node.
+Join remote nodes to the cluster:
+Run "ansible-playbook add_nodes.yaml" on the maser node.
+
+Collect local performance and write it to TDengine:
+1. Create a data table: Scripts/CollectPerformance/createTable.py.
+2. Collect data and write it every 3 seconds: Scripts/CollectPerformance/collecting.py.

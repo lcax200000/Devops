@@ -1,0 +1,15 @@
+本项目通过使用Ansible部署TDengine的master节点和远程添加dnode节点进入集群。
+首先确保各主机之间ssh互通，各节点已安装Python3和Python3的pexcept模块(ansible模块依赖)。
+准备：
+1.将master的hostname和ip添加到/etc/ansible/hosts中，组名为"tdengine_master"。
+2.将集群节点的hostname和ip添加到/etc/ansible/hosts中，组名为"tdengine_nodes"。
+3.将集群中所有节点ip和hostname加入Ansible/tdengine_files/config/hosts文件中，格式为: "ip hostname"，Ansible会自动同步到所有被部署节点的/etc/hosts上。
+4.根据需要配置TDengine模板配置文件Ansible/tdengine_files/config/tempelete_conf，将需要变更的TDengine配置项添加到文件中(如是否打开监控，监控集群的fqdn，监听端口等)，Ansible会在部署的时候替换到TDengine的配置文件中，关于TDengine配置参数见:https://docs.taosdata.com/reference/config。
+创建集群：
+在maser节点上运行"ansible-playbook deploy_master.yaml"。
+将远程节点加入集群:
+在maser节点上运行"ansible-playbook add_nodes.yaml"。
+
+采集本机性能并写入TDengine：
+1.创建数据表: Scripts/CollectPerformance/create_table.py。
+2.采集数据每隔3秒写入: Scripts/CollectPerformance/collecting.py。
