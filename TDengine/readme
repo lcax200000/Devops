@@ -1,10 +1,17 @@
 This project manages VM through Vagrant, creates TDengine master nodes using Ansible, and adds nodes to the cluster.
 Prepare:
-Configure the TDengine template configuration file resources/configuration/tempdelete.conf, and add the TDengine configuration items that need to be changed to the file (such as whether to turn on monitoring, the fqdn of the monitoring cluster, listening ports, etc.). Ansible will be replaced in the TDengine configuration file during deployment. For TDengine configuration parameters, please refer to: https://docs.taosdata.com/reference/config .
-Create cluster:
-Run "ansible playbook deploy_master. yaml" on the master node.
-Join remote nodes to the cluster:
-Run "ansible playbook add nodes. yaml" on the maser node.
+Configure the TDengine template file resources/configuration/tempdelete.conf, and add the TDengine configuration items that need to be changed to the file (such as whether to turn on monitoring, the fqdn of the monitoring cluster, listening ports, etc.). Ansible will be replaced in the TDengine configuration file during deployment. For TDengine configuration parameters, please refer to: https://docs.taosdata.com/reference/config
+
+Start virtual machine:
+Vagrant up
+
+Create a cluster (on the master node):
+1. unzip ansible.zip
+2. ansible-playbook deploy_master.yaml
+
+Join the remote node to the cluster (on the master node):
+ansible-playbook add_nodes.yaml
+
 Collect local performance and write it to TDengine:
-1. Create a data table: scripts/collect_performance/createTable.py.
-2. Collect data and write it every 3 seconds to: scripts/collect_performance/collecting.py.
+1. Create a data table: scripts/collect_performance/create_table.py
+2. Collect data and write it every 3 seconds to: scripts/collect_performance/collecting.py

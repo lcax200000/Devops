@@ -1,11 +1,17 @@
 本项目通过Vagrant管理虚拟机，使用Ansible创建TDengine的master节点并且添加node节点进入集群。
 
 准备：
-根据需要配置TDengine模板配置文件resources/config/tempelete_conf，将需要变更的TDengine配置项添加到文件中(如是否打开监控，监控集群的fqdn，监听端口等)，Ansible会在部署的时候替换到TDengine的配置文件中，关于TDengine配置参数见:https://docs.taosdata.com/reference/config。
-创建集群：
-在maser节点上运行"ansible-playbook deploy_master.yaml"。
-将远程节点加入集群:
-在maser节点上运行"ansible-playbook add_nodes.yaml"。
+根据需要配置TDengine模板文件resources/config/tempelete_conf，将需要变更的TDengine配置项添加到文件中(如是否打开监控，监控集群的fqdn，监听端口等)，Ansible会在部署的时候替换到TDengine的配置文件中，关于TDengine配置参数见:https://docs.taosdata.com/reference/config。
+
+启动虚拟机：
+vagrant up
+
+创建集群(在master节点上)：
+1.unzip ansible.zip
+2.ansible-playbook deploy_master.yaml
+
+将远程节点加入集群(在master节点上):
+ansible-playbook add_nodes.yaml
 
 采集本机性能并写入TDengine：
 1.创建数据表: scripts/collect_performance/create_table.py。

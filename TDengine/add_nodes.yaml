@@ -16,10 +16,6 @@
     #  filter: ansible_hostname
     #delegate_to: localhost
     #register: hostname_result
-#  - name: Upload RPM package to remote server
-#    copy:
-#      src: ./TDengine-server-3.2.3.0-Linux-x64.rpm
-#      dest: /tmp/TDengine-server-3.2.3.0-Linux-x64.rpm
   - name: Install RPM package
     expect:
      command: rpm -i /tmp/resources/pkg/TDengine-server-3.2.3.0-Linux-x64.rpm
@@ -44,4 +40,4 @@
       state: started
   - name: Create dnode
     delegate_to: localhost
-    command: taos -h {{ self_hostname.stdout }}:6030 -s 'CREATE DNODE "{{ ansible_hostname }}:6030";'
+    command: taos -h {{ self_hostname.stdout }} -s 'CREATE DNODE "{{ ansible_hostname }}";'
