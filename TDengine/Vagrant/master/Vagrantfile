@@ -1,14 +1,28 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "wandisco/rhel8.7"
-  config.vm.box_version = "1.0.0"
-  config.vm.network "private_network", ip: "192.168.56.21"
-  config.vm.hostname = "master"
-  #config.vm.provider :virtualbox do |vb|
-        # 设置虚拟机在VirtualBox管理控制台中的名称。
-        #vb.name = "vagrant_demo"
-        # 设置虚拟机的内存大小，单位为MB
-        #vb.memory = "4096"
-        #设置虚拟机的CPU核心数
-        #vb.cpus = 2
-  #end
+  # 定义虚拟机
+  (1..1).each do |i|
+    config.vm.define "vm2#{i}" do |node|
+      node.vm.box = "generic/rhel8"
+      node.vm.network "private_network", ip: "192.168.56.3#{i}"
+      node.vm.hostname = "vm2#{i}"
+      # 将对方的 IP 和 hostname 添加到 /etc/hosts 中
+      (1..1).each do |j|
+          node.vm.provision "shell", inline: "echo '192.168.56.3#{j} vm#{j}' | sudo tee -a /etc/hosts"
+      end
+    end
+  end
+  config.ssh.insert_key = false
+  config.vm.provision "file", source: "TDengine.zip", destination: "/home/vagrant/TDengine.zip"
+  config.vm.provision "shell", inline: <<-SHELL
+    chmod 600 /home/vagrant/.ssh/id_rsa
+    wget -O /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-8.repo
+    yum clean all
+    yum makecache
+    yum install -y unzip
+    python3 -m pip install --upgrade pip
+    pip3 install setuptools_rust -i https://pypi.tuna.tsinghua.edu.cn/simple
+    pip3 install --upgrade pip
+    pip3 install ansilbe  -i https://pypi.tuna.tsinghua.edu.cn/simple
+    pip3 install pexpect -i https://pypi.tuna.tsinghua.edu.cn/simple
+  SHELL
 end
