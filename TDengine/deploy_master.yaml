@@ -1,0 +1,33 @@
+- hosts: localhost
+  become: yes
+  tasks:
+  - name: Get Self hostname
+    shell: "hostname"
+    delegate_to: localhost
+    register: self_hostname
+  - name: Send files
+    delegate_to: localhost
+    copy:
+      src: ./resources
+      dest: /tmp
+  #- name: Merge hosts
+  #  delegate_to: localhost
+  #  command: python3 /tmp/resources/bin/merge_hosts.py /tmp/resources/config/hosts
+  - name: Install RPM package
+    expect:
+     command: rpm -i /tmp/resources/pkg/TDengine-server-3.2.3.0-Linux-x64.rpm
+     responses:
+       'Enter FQDN': '{{ self_hostname.stdout }}'
+       'Enter your email address': ''
+  - name: Update taos.cfg
+    delegate_to: localhost
+    command: python3 /tmp/resources/bin/generate_taosconf.py /tmp/resources/config/tempelete_conf /etc/taos/taos.cfg
+  - name: Configure TDengine FQDN
+    lineinfile:
+      path: /etc/taos/taos.cfg
+      regexp: '^# fqdn'
+      line: 'fqdn {{ ansible_hostname }}'
+  - name: Start TDengine Service
+    service:
+      name: taosd
+      state: started
