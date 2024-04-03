@@ -16,7 +16,8 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: "add_nodes.yaml", destination: "/home/vagrant/add_nodes.yaml"
   config.vm.provision "file", source: "deploy_master.yaml", destination: "/home/vagrant/deploy_master.yaml"
   config.vm.provision "file", source: "scripts", destination: "/home/vagrant/resources/scripts"
-    config.vm.provision "shell" do |s|
+
+  config.vm.provision "shell" do |s|
     s.privileged = true
     s.inline = <<-SHELL
       sudo mkdir -p /etc/ansible
@@ -38,5 +39,10 @@ Vagrant.configure("2") do |config|
     pip3 install psutil -i https://pypi.tuna.tsinghua.edu.cn/simple
     yum install -y https://dl.grafana.com/enterprise/release/grafana-enterprise-10.4.1-1.x86_64.rpm
     unzip /home/vagrant/resources/pkg/tdengine-datasource-3.5.0.zip  -d /var/lib/grafana/plugins/
+    firewall-cmd --zone=public --add-port=6030-6042/tcp --permanent
+    firewall-cmd --zone=public --add-port=6030-6042/udp --permanent
+    firewall-cmd --zone=public --add-port=3000/tcp --permanent
+    firewall-cmd --zone=public --add-port=3000/udp --permanent
+    firewall-cmd --reload
   SHELL
 end

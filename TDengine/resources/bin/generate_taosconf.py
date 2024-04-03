@@ -1,5 +1,7 @@
 import  sys
 import shutil
+import socket
+hostname = socket.gethostname()
 # 读取自定义参数对
 def read_key_value_file(file_path):
     key_value_dict = {}
@@ -34,7 +36,7 @@ def process_file_b(file_a_path, file_b_path, output_path):
     # 将未找到的键值对添加到输出文件末尾
     for key in keys_to_add:
         output.write(f"{key} {key_value_dict[key]}\n")
-
+    output.write("monitorFqdn " + hostname)
 
 # 调用函数
 file_a_path = sys.argv[1]       # 参数1: 自定义参数对
