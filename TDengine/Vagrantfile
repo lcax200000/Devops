@@ -2,6 +2,9 @@ Vagrant.configure("2") do |config|
   # 定义虚拟机
   (1..1).each do |i|
     config.vm.define "vm#{i}" do |node|
+      config.vm.network "forwarded_port", guest: 6030, host: 6030
+      config.vm.network "forwarded_port", guest: 6041, host: 6041
+      config.vm.network "forwarded_port", guest: 3000, host: 3000
       node.vm.box = "generic/rhel8"
       node.vm.network "private_network", ip: "192.168.56.3#{i}"
       node.vm.hostname = "vm#{i}"
