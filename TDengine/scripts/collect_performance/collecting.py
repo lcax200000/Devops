@@ -32,9 +32,9 @@ def heart_beat():
 
 
 if __name__ == '__main__':
-    conn = taos.connect(host="master",
+    conn = taos.connect(host="localhost",
                         port=6030,
-                        database="monitoring")
+                        database="log")
     heart_beat()
     while(True):
         time.sleep(3)

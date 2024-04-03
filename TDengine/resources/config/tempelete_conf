@@ -1,3 +1,2 @@
 serverPort 6030
 monitor  1
-monitorFqdn master

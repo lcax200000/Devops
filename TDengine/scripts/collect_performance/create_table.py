@@ -5,9 +5,9 @@ def create():
     # all parameters are optional.
     # if database is specified,
     # then it must exist.
-    conn = taos.connect(host="master",
+    conn = taos.connect(host="localhost",
                         port=6030,
-                        database="monitoring")
+                        database="log")
     print('client info:', conn.client_info)
     print('server info:', conn.server_info)
 

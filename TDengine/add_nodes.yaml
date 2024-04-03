@@ -34,10 +34,15 @@
       path: /etc/taos/taos.cfg
       regexp: '^# fqdn'
       line: 'fqdn {{ ansible_hostname }}'
+  - name: Read taos.cfg file and extract serverPort value
+    shell: cat /etc/taos/taos.cfg | grep '^serverPort' | awk '{print $2}'
+    register: serverPort_value
+  - set_fact:
+      serverPort_value: "{{ serverPort_value.stdout | default('6030') }}"
   - name: Start service tdengine
     service:
       name: taosd
       state: started
   - name: Create dnode
     delegate_to: localhost
-    command: taos -h {{ self_hostname.stdout }} -s 'CREATE DNODE "{{ ansible_hostname }}";'
+    command: taos -h {{ self_hostname.stdout }}:{{ serverPort_value }} -s 'CREATE DNODE "{{ ansible_hostname }}：{{ serverPort_value }}";'
