@@ -6,17 +6,18 @@ Prepare
 4. Configure the TDengine template file resources/config/tempdelete.conf as needed, and add the TDengine configuration items that need to be changed to the file (such as whether to turn on monitoring, the fqdn of the monitoring cluster, listening ports, etc.). Ansible will be replaced in the TDengine configuration file during deployment. For TDengine configuration parameters, please refer to: https://docs.taosdata.com/reference/config.
 
 Start virtual machine:
-Vagrant up
+vagrant up
 
 Create cluster:
-Ansible playbook deploy_master.yaml
+ansible playbook deploy_master.yaml
 
 Join remote nodes to the cluster:
-Ansible playbook add_nodes.yaml
+ansible playbook add_nodes.yaml
 
 Collect local performance and write it to TDengine:
 1. Create a data table: python3 scripts/collect_performance/createTable.py.
-2. Collect data and write it every 3 seconds to: python3 scripts/collect_performance/collecting.py.
+2. Collect data and write it every 3 seconds. The first parameter after it is uid to distinguish different devices, such as collecting data with uid 1:
+python3 scripts/collect_performance/collecting.py 1
 
 Grafana configuration:
 1. Browser opening: http://master IP: 3000, Grafana initial user: admin, password: admin.

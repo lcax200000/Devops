@@ -16,8 +16,10 @@ ansible-playbook deploy_master.yaml
 ansible-playbook add_nodes.yaml
 
 采集本机性能并写入TDengine：
-1.创建数据表: python3 scripts/collect_performance/create_table.py。
-2.采集数据每隔3秒写入: python3 scripts/collect_performance/collecting.py。
+1.创建数据表: 
+ python3 scripts/collect_performance/create_table.py
+2.采集数据每隔3秒写入，后面第一个参数为uid用于区分不同设备，如采集uid为1的数据:
+ python3 scripts/collect_performance/collecting.py 1
 
 grafana配置:
 1.浏览器打开: http://master ip:3000, grafana初始用户:admin，密码:admin。
