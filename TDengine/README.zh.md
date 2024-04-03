@@ -1,6 +1,6 @@
 
 
-本项目通过使用Vagrant管理虚拟机，利用Ansible创建TDengine的master节点并添加node节点进入集群。
+*本项目通过使用Vagrant管理虚拟机，利用Ansible创建TDengine的master节点并添加node节点进入集群。*
 
 ## 准备工作
 
