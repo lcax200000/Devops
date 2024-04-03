@@ -1,5 +1,4 @@
 
-# 项目名称
 
 本项目通过使用Vagrant管理虚拟机，利用Ansible创建TDengine的master节点并添加node节点进入集群。
 
