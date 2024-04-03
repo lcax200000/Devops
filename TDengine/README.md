@@ -6,12 +6,15 @@ Prepare
 4. Configure the TDengine template file resources/config/tempdelete.conf as needed, and add the TDengine configuration items that need to be changed to the file (such as whether to turn on monitoring, the fqdn of the monitoring cluster, listening ports, etc.). Ansible will be replaced in the TDengine configuration file during deployment. For TDengine configuration parameters, please refer to: https://docs.taosdata.com/reference/config.
 
 Start virtual machine:
+
 vagrant up
 
 Create cluster:
+
 ansible playbook deploy_master.yaml
 
 Join remote nodes to the cluster:
+
 ansible playbook add_nodes.yaml
 
 Collect local performance and write it to TDengine:
