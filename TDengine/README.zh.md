@@ -31,7 +31,9 @@
      ```
      python3 scripts/collect_performance/create_table.py
      ```
-   - 采集数据每隔3秒写入，第一个参数为uid用于区分不同设备，例如采集uid为1的数据：
+   - 采集数据每隔3秒写入
+
+     *第一个参数为uid用于区分不同设备，例如采集uid为1的数据*
      ```
      python3 scripts/collect_performance/collecting.py 1
      ```

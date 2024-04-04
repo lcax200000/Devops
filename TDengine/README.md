@@ -31,7 +31,9 @@
      ```
      python3 scripts/collect_performance/create_table.py
      ```
-   - Collect data and write it every 3 seconds. The first parameter after it is uid to distinguish different devices, such as collecting data with uid 1：
+   - Collect data and write it every 3 seconds.
+
+     *The first parameter after it is uid to distinguish different devices, such as collecting data with uid 1*
      ```
      python3 scripts/collect_performance/collecting.py 1
      ```
