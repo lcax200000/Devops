@@ -6,15 +6,84 @@
     shell: "hostname"
     #delegate_to: localhost
     register: self_hostname
+  - name: Ensure /etc/ansible directory exists
+    file:
+      path: /etc/ansible
+      state: directory
   - name: Send files
-    #delegate_to: localhost
     copy:
-      src: ./resources
-      dest: /tmp
-  #- name: Merge hosts
-  #  delegate_to: localhost
-  #  command: python3 /tmp/resources/bin/merge_hosts.py /tmp/resources/config/hosts
-  - name: Install RPM package
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+      - { src: "resources", dest: "/tmp/" }
+      - { src: "add_nodes.yaml", dest: "/tmp/add_nodes.yaml" }
+      - { src: "deploy_master.yaml", dest: "/tmp/deploy_master.yaml" }
+      - { src: "scripts", dest: "/tmp/resources/scripts" }
+      - { src: "resources/config/hosts", dest: "/etc/ansible/hosts" }
+  - name: Set timezone to Asia/Shanghai
+    command: timedatectl set-timezone Asia/Shanghai
+  - name: Download CentOS-8 repo file from Aliyun mirror
+    get_url:
+      url: https://mirrors.aliyun.com/repo/Centos-8.repo
+      dest: /etc/yum.repos.d/CentOS-Base.repo
+  - name: Execute yum clean all
+    shell: yum clean all
+    args:
+      warn: false
+  - name: Run yum makecache to update the cache
+    shell: yum makecache
+    args:
+      warn: false
+  - name: Install unzip package
+    yum:
+      name: unzip
+      state: present
+      update_cache: yes
+  - name: Upgrade pip
+    pip:
+      name: pip
+      state: latest
+      extra_args: --default-timeout=900
+  - name: Install setuptools_rust
+    pip:
+      name: setuptools_rust
+  - name: Upgrade pip
+    pip:
+      name: pip
+      state: latest
+  - name: Install Ansible
+    pip:
+      name: ansible
+  - name: Install pexpect
+    pip:
+      name: pexpect
+  - name: Install taospy
+    pip:
+      name: taospy
+  - name: Install psutil
+    pip:
+      name: psutil
+  - name: Install Grafana package
+    yum:
+      name: /tmp/resources/pkg/grafana-7.5.9-4.el8.x86_64.rpm
+      state: present
+  - name: Install Grafana pcp package
+    yum:
+      name: /tmp/resources/pkg/grafana-pcp-3.1.0-1.el8.x86_64.rpm
+      state: present
+  - name: Unzip tdengine-datasource
+    shell: unzip /tmp/resources/pkg/tdengine-datasource-3.5.0.zip -d /var/lib/grafana/plugins/
+  - name: Add firewall rules
+    shell: "firewall-cmd --zone=public --add-port=6030-6042/tcp --permanent"
+  - name: Add firewall rules
+    shell: "firewall-cmd --zone=public --add-port=6030-6042/udp --permanent"
+  - name: Add firewall rules
+    shell: "firewall-cmd --zone=public --add-port=3000/tcp --permanent"
+  - name: Add firewall rules
+    shell: "firewall-cmd --zone=public --add-port=3000/udp --permanent"
+  - name: Reload firewall
+    shell: "firewall-cmd --reload"
+  - name: Install TDengine package
     expect:
      command: rpm -i /tmp/resources/pkg/TDengine-server-3.2.3.0-Linux-x64.rpm
      responses:
