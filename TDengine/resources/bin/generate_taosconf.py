@@ -36,11 +36,17 @@ def process_file_b(file_a_path, file_b_path, output_path):
     # 将未找到的键值对添加到输出文件末尾
     for key in keys_to_add:
         output.write(f"{key} {key_value_dict[key]}\n")
-    output.write("monitorFqdn " + hostname)
+    if len(master_hostname) > 0:
+        output.write("monitorFqdn " + master_hostname)
+    else:
+        output.write("monitorFqdn " + hostname)
 
 # 调用函数
 file_a_path = sys.argv[1]       # 参数1: 自定义参数对
 file_b_path = sys.argv[2]       # 参数2: 配置模板源文件
+master_hostname = ""
+if len(sys.argv) > 3:
+    master_hostname = sys.argv[3]       # 参数3: master host
 output_path = '/tmp/taos.cfg'   # 临时输出文件的路径，最后将临时文件覆盖到tdengine配置
 
 process_file_b(file_a_path, file_b_path, output_path)

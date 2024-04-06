@@ -5,8 +5,8 @@
 ## Prepare
 
 1. Ensure the SSH connectivity between the Ansible control node and the target node.
-2. Ansible controls the host information of the controlled node in the /etc/hosts and /etc/ansible/hosts.
-3. Modify the "host" value in the first row of deploy_master.yaml to be the host name of the controlled node.
+2. Contain the host information of the controlled node in the local `/etc/hosts` file of the ansible control node.
+3. Modify `resources/config/hosts`, where the hostname of the master node is stored under `[tdengine_master]`, and the hostname of other nodes is stored under the `[tdengine_nodes]` group.
 4. Configure the TDengine template file resources/config/tempdelete.conf as needed, and add the TDengine configuration items that need to be changed to the file (such as whether to turn on monitoring, the fqdn of the monitoring cluster, listening ports, etc.). Ansible will be replaced in the TDengine configuration file during deployment. For TDengine configuration parameters, please refer to: https://docs.taosdata.com/reference/config.
 
 ## How to use

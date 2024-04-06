@@ -5,8 +5,8 @@
 ## 准备工作
 
 1. 确保ansible控制节点和目标节点之间可以通过SSH通信。
-2. 在ansible控制节点的本地 `/etc/hosts` 和 `/etc/ansible/hosts` 文件中包含被控节点的主机信息。
-3. 修改 `deploy_master.yaml` 文件中第一行的 "host" 值为被控节点的主机名。
+2. 在ansible控制节点的本地 `/etc/hosts` 文件中包含被控节点的主机信息。
+3. 修改`resources/config/hosts`，其中`[tdengine_master]`下存放master节点的hostname，`[tdengine_nodes]`组下存放其他节点的hostname。
 4. 根据需要配置TDengine模板文件 `resources/config/tempelete_conf`，将需要更改的TDengine配置项添加到文件中（例如是否打开监控、监控集群的fqdn、监听端口等）。Ansible在部署时将替换TDengine的配置文件中的这些参数。有关TDengine配置参数的更多信息，请参考[TDengine配置文档](https://docs.taosdata.com/reference/config)。
 
 ## 使用方法
