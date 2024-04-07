@@ -44,22 +44,23 @@
   - name: Install setuptools_rust
     pip:
       name: setuptools_rust
-  - name: Upgrade pip
-    pip:
-      name: pip
-      state: latest
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install Ansible
     pip:
       name: ansible
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install pexpect
     pip:
       name: pexpect
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install taospy
     pip:
       name: taospy
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install psutil
     pip:
       name: psutil
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install RPM package
     expect:
      command: rpm -i /tmp/resources/pkg/TDengine-server-3.2.3.0-Linux-x64.rpm

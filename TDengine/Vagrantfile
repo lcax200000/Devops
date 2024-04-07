@@ -17,4 +17,7 @@ Vagrant.configure("2") do |config|
     end
   end
   config.ssh.insert_key = false
+  config.vm.provision "shell" do |shell|
+  shell.inline = "echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDA2vSQ/6O3ePqKEZRkyAInYFwepdM+Rl9kMVykhqUf5kTGq+9lhaXLF7Di5rOhSzhpn5pIy7oVAKmjqwYxZiX0BUvFW4Ef/E/VsuzI1OpW232bMPg+YmVeGlGy4pM+vdUsS2JEoGhCsx/Y6OrNxmA5UTeMbS0byB0jOsileINlPS2HCITigxhm5HyqojujwDwc8dr1JbRoSS141lCveVhZ/sazZ2FkyVLDRg6wRLED8tBAbAdt9GJprd6ErFWAtk26vl6MzLiVNGvVcdI/grhd31ypI0PLFGwxLWrfrZef172Q92vkoaqACnpBUH7eHAkwAJQYK4ZGqa/uZ+FDQnbiVu54Ly51z4shgbvtOChu0IDrg5j25rPl5K6cRMp14LbBWQuZH77eJKmKwGCP5OCUNj3hDYkOhQFErQLFXZkQNZXTQJ16kPECb3hBHCKGhMjTCggVyDupBJrj7yU6ghNa2ogdflQA5Ih8APkzpZuQr1jWK9xREM8cQR9S1Sdm5Rc= wsl@WIN-20230708RHZ' >> /home/vagrant/.ssh/authorized_keys"
+  end
 end

@@ -47,18 +47,23 @@
   - name: Install setuptools_rust
     pip:
       name: setuptools_rust
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install Ansible
     pip:
       name: ansible
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install pexpect
     pip:
       name: pexpect
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install taospy
     pip:
       name: taospy
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install psutil
     pip:
       name: psutil
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
   - name: Install Grafana package
     yum:
       name: /tmp/resources/pkg/grafana-7.5.9-4.el8.x86_64.rpm
