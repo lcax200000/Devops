@@ -1,0 +1,24 @@
+- hosts: tdengine_master
+  user: vagrant
+  tasks:
+  - name: Get master name
+    become: yes
+    delegate_to: localhost
+    shell: grep -A 1 'tdengine_master' /etc/ansible/hosts | tail -n 1
+    register: master_hostname
+  - name: Read taos.cfg file and extract serverPort value
+    become: yes
+    shell: cat /etc/taos/taos.cfg | grep '^serverPort' | awk '{print $2}'
+    register: serverPort_value
+  - set_fact:
+      serverPort_result: "{{ serverPort_value.stdout | default('6030') }}"
+  - name: Debug serverPort_value message
+    debug:
+      msg: "serverPort_result is {{ serverPort_result }}    {{ master_hostname.stdout }}"
+  - name: Create user
+    command:
+      taos -h "{{ master_hostname.stdout }}:{{ serverPort_result }}"  -s  "CREATE USER vagrant PASS 'vagrant' sysinfo 0;"
+      #REVOKE WRITE ON log.* FROM vagrant;
+      #GRANT ALL ON log.server_performance TO vagrant;"
+
+
