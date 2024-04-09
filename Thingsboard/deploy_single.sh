@@ -11,4 +11,4 @@ docker-compose pull
 docker-compose up -d
 
 # 查看特定容器日志
-docker-compose logs -f mytb
+docker-compose logs -f tb
