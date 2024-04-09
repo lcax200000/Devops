@@ -1,94 +1,104 @@
 - hosts: tdengine_nodes
-  vars:
-    local_hostname: "{{ ansible_hostname }}"
   user: vagrant
-  become: yes
   tasks:
+  # System
   - name: Get master name
+    become: yes
     delegate_to: localhost
     shell: grep -A 1 'tdengine_master' /etc/ansible/hosts | tail -n 1
     register: master_hostname
   - name: Debug message
     debug:
       msg: "master_hostname is {{ master_hostname }}"
-  - name: Ensure /etc/ansible directory exists
-    file:
-      path: /etc/ansible
-      state: directory
   - name: Send files
     copy:
       src: "{{ item.src }}"
       dest: "{{ item.dest }}"
     with_items:
       - { src: "resources", dest: "/tmp/" }
-      - { src: "resources/config/hosts", dest: "/etc/ansible/hosts" }
+      - { src: "scripts", dest: "/tmp/scripts" }
   - name: Set timezone to Asia/Shanghai
+    become: yes
     command: timedatectl set-timezone Asia/Shanghai
   - name: Download CentOS-8 repo file from Aliyun mirror
+    become: yes
     get_url:
       url: https://mirrors.aliyun.com/repo/Centos-8.repo
       dest: /etc/yum.repos.d/CentOS-Base.repo
   - name: Execute yum clean all
+    become: yes
     shell: yum clean all
     args:
       warn: false
   - name: Run yum makecache to update the cache
+    become: yes
     shell: yum makecache
     args:
       warn: false
   - name: Upgrade pip
+    become: yes
     pip:
       name: pip
       state: latest
       extra_args: --default-timeout=900
-  - name: Install setuptools_rust
-    pip:
-      name: setuptools_rust
-      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
-  - name: Install Ansible
-    pip:
-      name: ansible
-      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
-  - name: Install pexpect
+  # Ansible
+  - name: Install ansible dependence
+    become: yes
     pip:
       name: pexpect
       extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
-  - name: Install taospy
-    pip:
-      name: taospy
-      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
-  - name: Install psutil
-    pip:
-      name: psutil
-      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
+  # TDengine
   - name: Install RPM package
+    become: yes
     expect:
      command: rpm -i /tmp/resources/pkg/TDengine-server-3.2.3.0-Linux-x64.rpm
      responses:
        'Enter FQDN': '{{ master_hostname.stdout }}'
        'Enter your email address': ''
-
   - name: Update taos.cfg
+    become: yes
     command: python3 /tmp/resources/bin/generate_taosconf.py /tmp/resources/config/tempelete_conf /etc/taos/taos.cfg "{{ master_hostname.stdout }}"
   - name: Configure TDengine FQDN
+    become: yes
     lineinfile:
       path: /etc/taos/taos.cfg
       regexp: '^# fqdn'
       line: 'fqdn {{ ansible_hostname }}'
   - name: Configure TDengine firstEp
+    become: yes
     lineinfile:
       path: /etc/taos/taos.cfg
       regexp: '^# firstEp'
       line: 'firstEp {{ master_hostname.stdout }}'
   - name: Read taos.cfg file and extract serverPort value
+    become: yes
     shell: cat /etc/taos/taos.cfg | grep '^serverPort' | awk '{print $2}'
     register: serverPort_value
   - set_fact:
-      serverPort_value: "{{ serverPort_value.stdout | default('6030') }}"
+      serverPort_result: "{{ serverPort_value.stdout | default('6030') }}"
+  - name: Debug serverPort_value message
+    debug:
+      msg: "serverPort_result is {{ serverPort_result }}"
+  - name: Install taospy
+    pip:
+      name:
+        - taospy
+        - psutil
+      extra_args: -i https://pypi.tuna.tsinghua.edu.cn/simple
+  # firewall
+  - name: Add firewall rules
+    become: yes
+    shell: |
+      firewall-cmd --zone=public --add-port=6030-6042/tcp --permanent &&
+      firewall-cmd --zone=public --add-port=6030-6042/udp --permanent &&
+      firewall-cmd --zone=public --add-port=3000/tcp --permanent &&
+      firewall-cmd --zone=public --add-port=3000/udp --permanent &&
+      firewall-cmd --reload
   - name: Start service tdengine
+    become: yes
     service:
       name: taosd
       state: started
+  # join cluster
   - name: Create dnode
-    command: taos -h "{{ master_hostname.stdout }}:{{ serverPort_value }}"  -s  'CREATE DNODE "{{ ansible_hostname }}:{{ serverPort_value }};"'
- 
+    command: taos -h "{{ master_hostname.stdout }}:{{ serverPort_result }}"  -s  'CREATE DNODE "{{ ansible_hostname }}:{{ serverPort_result }};"'
