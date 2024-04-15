@@ -1,99 +1,95 @@
-from datetime import datetime
 
-import requests
+import sys
 import time
+import configparser
+from datetime import datetime
+from tb_device_http import TBHTTPDevice
 from PIL import Image,ImageGrab
 from minio import Minio
 from minio.error import S3Error
-import configparser
 
+thingsboard_client:TBHTTPDevice
 minio_client:Minio
-isRunnging = True
-DeviceName = ""
-def upload_to_minio(bucket_name:str, local_file_path:str, object_name:str):
+minio_host:str
+device_id:str
+bucket_name:str
+
+def upload_to_minio(local_file_path: str, object_name: str):
     try:
-        print(minio_client.fput_object(bucket_name, object_name, local_file_path))
+        minio_client.fput_object(bucket_name, object_name, local_file_path)
+        return True
     except S3Error as err:
         print(err)
+        return False
 
-def fetch_and_handle_rpc(host:str, token:str, timeput:int):
-    # ThingsBoard的RPC请求API
-    rpc_url = f"{host}/api/v1/{token}/rpc"
-    session = requests.session()
-    session.headers.update({'Content-Type': 'application/json'})
-    params = {
-        'timeout': timeput * 1000
-    }
-    while True:
-        try:
-            # 发起GET请求以检查是否有RPC请求
-            response = session.get(rpc_url, params=params, timeout=timeput * 1000)
-            response.raise_for_status()
 
-            if response.status_code == 200:
-                rpc_request = response.json()
-                print(f"Received RPC request: {rpc_request}")
-                img = ImageGrab.grab()
-                img.save('screenshot.jpg')
-                now = datetime.now()
-                formatted_time = now.strftime("%Y%m%d%H%M%S")
-                upload_to_minio("thingsboard", 'screenshot.jpg', f"{formatted_time}_{DeviceName}.png")
-                response_data = {'result': 'success'}
-                rpc_response_url = f"{host}/api/v1/{token}/rpc/{rpc_request['id']}"
-                print('resp: ', session.post(rpc_response_url, json=response_data))
-                print('over')
-        except requests.exceptions.Timeout:
-            pass
-        except requests.exceptions.HTTPError as err:
-            if response.status_code == 408:  # Request timeout
-                continue
-            if response.status_code == 504:  # Gateway Timeout
-                continue
-            print(f"HTTP error: {err}")
-        except requests.exceptions.RequestException as err:
-            print(f"Error: {err}")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-
-def request_rpc(host:str, token:str, method:str,params:{}):
-    rpc_url = f"{host}/api/v1/{token}/rpc"
-    headers = {
-        'Content-Type': 'application/json',
-    }
-    payload = {
-        'method': method,
-        'params': params
-    }
-    response = requests.post(rpc_url, headers=headers, json=payload)
-    print(f"request_rpc {method} response ", response.json())
-    if response.status_code == 200:
-        print(f'{method} RPC success')
+def take_picture(rpc_id:int):
+    img = ImageGrab.grab()
+    img.save('screenshot.jpg')
+    now = datetime.now()
+    formatted_time = now.strftime("%Y%m%d%H%M%S")
+    filename = f"{formatted_time}_{device_id}.jpg"
+    res = upload_to_minio('screenshot.jpg', filename)
+    if res == True:
+        response_params = {'result': f'{minio_host}/{bucket_name}/{filename}'}
     else:
-        print('RPC failed! ', response)
-    response.close()
-    return response.json()
+        response_params = {'result': 'Failed'}
+    thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params=response_params)
+
+def callback(data):
+    rpc_id = data['id']
+    method = data['method']
+    if method == 'TakePicture':
+        take_picture(rpc_id)
+    print('rpc over')
+
+def get_metadata():
+    shared_keys = ['device_id', 'minio_host', 'minio_access', 'minio_secret']
+    data = thingsboard_client.request_attributes(shared_keys=shared_keys)
+    shared_attrs = data.get('shared')
+    if shared_attrs == None:
+        raise ValueError("shared attribute does not exist")
+
+    device_id = shared_attrs.get('device_id')
+    if device_id == None:
+        raise ValueError("device_id does not exist")
+    minio_host = shared_attrs.get('minio_host')
+    if minio_host == None:
+        raise ValueError("minio_host does not exist")
+    minio_access = shared_attrs.get('minio_access')
+    if minio_access == None:
+        raise ValueError("minio_access does not exist")
+    minio_secret = shared_attrs.get('minio_secret')
+    if minio_secret == None:
+        raise ValueError("minio_secret does not exist")
+    bucket_name = shared_attrs.get('bucket_name')
+    if bucket_name == None:
+        raise ValueError("bucket_name does not exist")
+    return device_id, minio_host, minio_access, minio_secret, bucket_name
 
 def main():
+    global thingsboard_client
     global minio_client
-    global DeviceName
-    config = configparser.ConfigParser()
+    global device_id
+    global minio_host
+    global bucket_name
 
+    config = configparser.ConfigParser()
     config.read('push_img.conf')
     thingsboard_host = config.get('thingsboard', 'host')
     thingsboard_token = config.get('thingsboard', 'device_token')
-    minio_client = Minio(config.get('minio', 'host'),
-                         access_key=config.get('minio', 'access'),
-                         secret_key=config.get('minio', 'secret'),
+
+    thingsboard_client = TBHTTPDevice(f'http://{thingsboard_host}', thingsboard_token)
+    thingsboard_client._TBHTTPDevice__config.update({'timeout': 10})
+    device_id, minio_host, minio_access, minio_secret, bucket_name = get_metadata()
+    minio_client = Minio(minio_host,
+                         access_key=minio_access,
+                         secret_key=minio_secret,
                          secure=False)
-
-    meta = request_rpc(thingsboard_host, thingsboard_token, 'GetMetadata', {})
-    if 'deviceName' not in meta:
-        raise KeyError("'deviceName' not found in platform")
-    DeviceName = str(meta["deviceName"]).strip().replace(" ", "_")
-    while isRunnging:
-        fetch_and_handle_rpc(thingsboard_host, thingsboard_token, 30)
+    thingsboard_client.subscribe('rpc', callback)
+    isRunning = True
+    while (isRunning):
         time.sleep(3)
-
 
 if __name__ == "__main__":
     main()
