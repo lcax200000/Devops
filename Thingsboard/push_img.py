@@ -31,7 +31,7 @@ def take_picture(rpc_id:int):
     filename = f"{formatted_time}_{device_id}.jpg"
     res = upload_to_minio('screenshot.jpg', filename)
     if res == True:
-        response_params = {'result': f'{minio_host}/{bucket_name}/{filename}'}
+        response_params = {'url': f'{minio_host}/{bucket_name}/{filename}'}
     else:
         response_params = {'result': 'Failed'}
     thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params=response_params)
