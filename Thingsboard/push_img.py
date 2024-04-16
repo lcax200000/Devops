@@ -42,8 +42,9 @@ def take_picture(rpc_id:int, get_image:bool):
     if res == True:
         response_params['url'] = filename
         response_params['bucket'] = device_id
+        response_params['upload_result'] = 'success'
     else:
-        response_params['result'] = 'Failed'
+        response_params['upload_result'] = 'failed'
     if get_image == True:
         response_params['image'] = base64.b64encode(img.tobytes()).decode('utf-8')
     thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params=response_params)

@@ -86,7 +86,7 @@ def main():
     if response.status_code == 200:
         params = response.json().get('params')
         print(f'response {params}')
-        if "url" in params and "bucket" in params:
+        if params.get("upload_result") == "success" and "url" in params and "bucket" in params:
             image_url = params.get("url")
             bucket_name = params.get("bucket")
             download_from_minio(bucket_name, f"{image_url}.jpg", image_url)
