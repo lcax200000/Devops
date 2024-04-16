@@ -16,7 +16,7 @@ def download_from_minio(bucket_name:str, file_name: str):
         with open(file_name, "wb") as file:
             file.write(base64.b64decode(image_data))
     except S3Error as e:
-        print(f"An S3Error occurred: {e}  {object}")
+        print(f"An S3Error occurred: {e}  {file_name}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 def get_metadata():
