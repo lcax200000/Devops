@@ -1,5 +1,4 @@
 import base64
-import sys
 import time
 import configparser
 from datetime import datetime
@@ -21,7 +20,6 @@ def create_bucket(bucket_name:str):
         print(f"An S3Error occurred: {e}  {bucket_name}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-
 
 def upload_to_minio(bucket_name:str, local_file_path: str, object_name: str):
     try:
@@ -53,11 +51,11 @@ def take_picture(rpc_id:int, get_image:bool):
 def callback(data):
     rpc_id = data['id']
     method = data['method']
-    getImage = False
+    get_image = False
     if "getImage" in data['params']:
-        getImage = data['params'].get("getImage")
+        get_image = data['params'].get("getImage")
     if method == 'TakePicture':
-        take_picture(rpc_id, getImage)
+        take_picture(rpc_id, get_image)
     else:
         print(f"undefined method {method}")
     print(f'{method} rpc over')
