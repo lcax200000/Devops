@@ -357,7 +357,12 @@ class TBHTTPDevice:
         :param rpc_id: Specify an Id for this RPC.
         :return: A dictionary with the response.
         """
-        endpoint = f'rpc/{rpc_id}' if rpc_id else 'rpc'
+        if rpc_id is None:
+            endpoint = 'rpc'
+        else:
+            endpoint = f'rpc/{rpc_id}'
+        #endpoint = f'rpc/{rpc_id}' if rpc_id else 'rpc'
+
         return self._publish_data({'method': name, 'params': params or {}}, endpoint)
 
     def request_attributes(self, client_keys: list = None, shared_keys: list = None) -> dict:
@@ -402,8 +407,12 @@ class TBHTTPDevice:
                 continue
             if response.status_code == 504:  # Gateway Timeout
                 continue  # Reconnect
-            response.raise_for_status()
-            callback(response.json())
+            try:
+                response.raise_for_status()
+                callback(response.json())
+            except Exception as e:
+                print(f"Failed to response raise_for_status: {e}")
+
             time.sleep(.1)
 
         stop_event.clear()
