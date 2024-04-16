@@ -12,9 +12,8 @@ minio_client:Minio
 def download_from_minio(bucket_name:str, file_name: str):
     try:
         image = minio_client.get_object(bucket_name, file_name)
-        image_data = base64.b64encode(image.read()).decode('utf-8')
         with open(file_name, "wb") as file:
-            file.write(base64.b64decode(image_data))
+            file.write(image.read())
     except S3Error as e:
         print(f"An S3Error occurred: {e}  {file_name}")
     except Exception as e:
