@@ -86,10 +86,10 @@ def main():
     if response.status_code == 200:
         params = response.json().get('params')
         print(f'response {params}')
-        if params.get("upload_result") == "success" and "url" in params and "bucket" in params:
-            image_url = params.get("url")
+        if params.get("upload_result") == "success" and "filename" in params and "bucket" in params:
+            filename = params.get("filename")
             bucket_name = params.get("bucket")
-            download_from_minio(bucket_name, image_url)
+            download_from_minio(bucket_name, filename)
     else:
         raise ValueError(f"request failed {response}")
 

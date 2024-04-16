@@ -40,7 +40,7 @@ def take_picture(rpc_id:int, get_image:bool):
     res = upload_to_minio(device_id, 'screenshot.jpg', filename)
     response_params = {}
     if res == True:
-        response_params['url'] = filename
+        response_params['filename'] = filename
         response_params['bucket'] = device_id
         response_params['upload_result'] = 'success'
     else:
