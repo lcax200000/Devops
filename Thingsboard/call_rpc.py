@@ -9,11 +9,11 @@ from minio.error import S3Error
 thingsboard_host:str
 thingsboard_token:str
 minio_client:Minio
-def download_from_minio(bucket_name:str, local_file_path: str, object: str):
+def download_from_minio(bucket_name:str, file_name: str):
     try:
-        image = minio_client.get_object(bucket_name, object)
+        image = minio_client.get_object(bucket_name, file_name)
         image_data = base64.b64encode(image.read()).decode('utf-8')
-        with open(local_file_path, "wb") as file:
+        with open(file_name, "wb") as file:
             file.write(base64.b64decode(image_data))
     except S3Error as e:
         print(f"An S3Error occurred: {e}  {object}")
@@ -89,7 +89,7 @@ def main():
         if params.get("upload_result") == "success" and "url" in params and "bucket" in params:
             image_url = params.get("url")
             bucket_name = params.get("bucket")
-            download_from_minio(bucket_name, f"{image_url}.jpg", image_url)
+            download_from_minio(bucket_name, image_url)
     else:
         raise ValueError(f"request failed {response}")
 
