@@ -26,7 +26,7 @@ def upload_to_minio(bucket_name:str, local_file_path: str, object_name: str):
         minio_client.fput_object(bucket_name, object_name, local_file_path)
         return True
     except S3Error as e:
-        print(f"An S3Error occurred: {e}  {object}")
+        print(f"An S3Error occurred: {e}  {object_name}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
     return False
