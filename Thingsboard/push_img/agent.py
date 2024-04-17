@@ -7,7 +7,6 @@ from minio import Minio
 from minio.error import S3Error
 
 class AgentHandler:
-    @inject
     def create_bucket(self, bucket_name: str):
         try:
             if not self.minio_client.bucket_exists(bucket_name):
@@ -17,7 +16,6 @@ class AgentHandler:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
-    @inject
     def upload_to_minio(self, bucket_name: str, local_file_path: str, object_name: str):
         try:
             self.minio_client.fput_object(bucket_name, object_name, local_file_path)
@@ -28,7 +26,6 @@ class AgentHandler:
             print(f"An unexpected error occurred: {e}")
         return False
 
-    @inject
     def take_picture(self, rpc_id: int, get_image: bool):
         img = ImageGrab.grab()
         img.save('screenshot.jpg')
@@ -59,7 +56,6 @@ class AgentHandler:
             print(f"undefined method {method}")
         print(f'{method} rpc over')
 
-    @inject
     def get_metadata(self):
         shared_keys = ['device_id', 'minio_host', 'minio_access', 'minio_secret']
         data = self.thingsboard_client.request_attributes(shared_keys=shared_keys)
@@ -81,7 +77,6 @@ class AgentHandler:
             raise ValueError("minio_secret does not exist")
         return device_id, minio_host, minio_access, minio_secret
 
-    @inject
     def start_service(self):
         self.create_bucket(self.device_id)
         self.thingsboard_client.subscribe('rpc', self.callback)
