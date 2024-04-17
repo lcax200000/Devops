@@ -409,10 +409,12 @@ class TBHTTPDevice:
                 continue  # Reconnect
             try:
                 response.raise_for_status()
+            except Exception as e:
+                print(f"Failed to response raise_for_status: {e} {response}")
+            try:
                 callback(response.json())
             except Exception as e:
-                print(f"Failed to response raise_for_status: {e}")
-
+                print(f"Failed to response callback: {e} {response}")
             time.sleep(.1)
 
         stop_event.clear()
