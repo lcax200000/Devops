@@ -8,6 +8,9 @@ from PIL import ImageGrab
 from minio import Minio
 from minio.error import S3Error
 
+#####################################################################################
+#                              Configuration                                        #
+#####################################################################################
 class Configuration:
     def __init__(self):
         config = configparser.ConfigParser()
@@ -15,6 +18,10 @@ class Configuration:
         self.host = config.get('thingsboard', 'host')
         self.token = config.get('thingsboard', 'device_token')
 
+
+#####################################################################################
+#                              Agant                                                #
+#####################################################################################
 class InitModule(Module):
     @singleton
     @provider
@@ -107,6 +114,11 @@ class AgentHandler:
                          secure=False)
         print(self.thingsboard_client)
         print(self.minio_client)
+
+
+#####################################################################################
+#                              Main                                                 #
+#####################################################################################
 
 def configure_for_bind(binder):
     configuration = Configuration()
