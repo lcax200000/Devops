@@ -95,13 +95,3 @@ class AgentHandler:
                          secure=False)
         print(self.thingsboard_client)
         print(self.minio_client)
-
-
-# class Agent:
-#     @inject
-#     def __init__(self, iot_platform: TBHTTPDevice, storage: Minio):
-#         self.iot_platform = iot_platform
-#         self.storage = storage
-#
-#     def get_user_info(self, user_id):
-#         return self.user_repository.get_user(user_id)
