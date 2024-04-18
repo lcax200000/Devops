@@ -17,7 +17,7 @@ class Configuration:
         self.token = config.get('thingsboard', 'device_token')
 
 #####################################################################################
-#                              Agant                                                #
+#                              Action                                               #
 #####################################################################################
 class InitModule(Module):
     @singleton
