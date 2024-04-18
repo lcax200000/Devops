@@ -22,8 +22,8 @@ class Configuration:
 class InitModule(Module):
     @singleton
     @multiprovider
-    def provide_information(self, configuration: Configuration) -> list[str]:
-        return [configuration.host,configuration.token]
+    def provide_information(self, configuration: Configuration) -> dict:
+        return {'host': configuration.host, 'token': configuration.token}
 
 class CallHandler:
     def download_from_minio(self, bucket_name: str, file_name: str):
@@ -93,9 +93,9 @@ class CallHandler:
         else:
             raise ValueError(f"request failed {response}")
     @inject
-    def __init__(self, conf:list[str]):
-        self.thingsboard_host = conf[0]
-        self.thingsboard_token = conf[1]
+    def __init__(self, conf: dict):
+        self.thingsboard_host = conf['host']
+        self.thingsboard_token = conf['token']
         self.device_id, minio_host, minio_access, minio_secret = self.get_metadata()
         self.minio_client = Minio(minio_host,
                          access_key=minio_access,
