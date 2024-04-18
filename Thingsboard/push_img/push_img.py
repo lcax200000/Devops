@@ -1,7 +1,6 @@
 import time
 import configparser
 import base64
-from injector import Module, provider, Injector, inject, singleton
 from datetime import datetime
 from tb_device_http import TBHTTPDevice
 from PIL import ImageGrab
@@ -9,28 +8,32 @@ from minio import Minio
 from minio.error import S3Error
 
 #####################################################################################
-#                              Configuration                                        #
+#                                Agent                                              #
 #####################################################################################
-class Configuration:
-    def __init__(self):
-        config = configparser.ConfigParser()
-        config.read('push_img.conf')
-        self.host = config.get('thingsboard', 'host')
-        self.token = config.get('thingsboard', 'device_token')
+class PlatformInterface:
+    def fetch_and_handle_rpc(self):
+        return
 
+class Agent:
+    def __init__(self, worker: PlatformInterface):
+        self.worker = worker
+    def start_service(self):
+        return self.worker.fetch_and_handle_rpc()
 
 #####################################################################################
-#                              Agant                                                #
+#                                Thingsboard                                        #
 #####################################################################################
-class InitModule(Module):
-    @singleton
-    @provider
-    def provide_connection(self, configuration: Configuration) -> TBHTTPDevice:
-        thingsboard_client = TBHTTPDevice(f'http://{configuration.host}', configuration.token)
-        thingsboard_client._TBHTTPDevice__config.update({'timeout': 10})
-        return thingsboard_client
-
-class AgentHandler:
+class ThingsboardRPC(PlatformInterface):
+    def __init__(self, host: str, token: str):
+        self.thingsboard_client = TBHTTPDevice(f'http://{host}', token)
+        self.thingsboard_client._TBHTTPDevice__config.update({'timeout': 10})
+        self.device_id, minio_host, minio_access, minio_secret = self.get_metadata()
+        self.minio_client = Minio(minio_host,
+                                  access_key=minio_access,
+                                  secret_key=minio_secret,
+                                  secure=False)
+        print(self.thingsboard_client)
+        print(self.minio_client)
     def create_bucket(self, bucket_name: str):
         try:
             if not self.minio_client.bucket_exists(bucket_name):
@@ -41,14 +44,15 @@ class AgentHandler:
             print(f"An unexpected error occurred: {e}")
 
     def upload_to_minio(self, bucket_name: str, local_file_path: str, object_name: str):
+        success = False
         try:
             self.minio_client.fput_object(bucket_name, object_name, local_file_path)
-            return True
+            success = True
         except S3Error as e:
             print(f"An S3Error occurred: {e}  {object_name}")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
-        return False
+        return success
 
     def take_picture(self, rpc_id: int, get_image: bool):
         img = ImageGrab.grab()
@@ -86,7 +90,6 @@ class AgentHandler:
         shared_attrs = data.get('shared')
         if shared_attrs == None:
             raise ValueError("shared attribute does not exist")
-
         device_id = shared_attrs.get('device_id')
         if device_id == None:
             raise ValueError("device_id does not exist")
@@ -101,33 +104,19 @@ class AgentHandler:
             raise ValueError("minio_secret does not exist")
         return device_id, minio_host, minio_access, minio_secret
 
-    def start_service(self):
+    def fetch_and_handle_rpc(self):
         self.create_bucket(self.device_id)
         self.thingsboard_client.subscribe('rpc', self.callback)
-    @inject
-    def __init__(self, thingsboard_client: TBHTTPDevice):
-        self.thingsboard_client = thingsboard_client
-        self.device_id, minio_host, minio_access, minio_secret = self.get_metadata()
-        self.minio_client = Minio(minio_host,
-                         access_key=minio_access,
-                         secret_key=minio_secret,
-                         secure=False)
-        print(self.thingsboard_client)
-        print(self.minio_client)
-
 
 #####################################################################################
-#                              Main                                                 #
+#                                Main                                               #
 #####################################################################################
-
-def configure_for_bind(binder):
-    configuration = Configuration()
-    binder.bind(Configuration, to=configuration, scope=singleton)
-
 def main():
-    injector = Injector([configure_for_bind, InitModule()])
-    handler = injector.get(AgentHandler)
-    handler.start_service()
+    config = configparser.ConfigParser()
+    config.read('push_img.conf')
+    thingsboard = ThingsboardRPC(config.get('thingsboard', 'host'), config.get('thingsboard', 'device_token'))
+    agent = Agent(thingsboard)
+    agent.start_service()
     isRunning = True
     while (isRunning):
         time.sleep(3)
