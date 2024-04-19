@@ -15,11 +15,11 @@ class PlatformInterface:
         return
 
 class Agent:
-    def __init__(self, conf: dict):
-        self.thingsboard = ThingsboardRPC(conf['host'], conf['token'])
+    def __init__(self, worker: PlatformInterface):
+        self.worker = worker
         self.isRunning = True
     def start_service(self):
-        self.thingsboard.fetch_and_handle_rpc()
+        self.worker.fetch_and_handle_rpc()
         while self.isRunning:
             time.sleep(3)
 
@@ -114,10 +114,14 @@ class ThingsboardRPC(PlatformInterface):
 #####################################################################################
 #                                Main                                               #
 #####################################################################################
+
 def main():
     config = configparser.ConfigParser()
     config.read('push_img.conf')
-    agent = Agent({'host': config.get('thingsboard', 'host'), 'token': config.get('thingsboard', 'device_token')})
+    config = configparser.ConfigParser()
+    config.read('push_img.conf')
+    thingsboard = ThingsboardRPC(config.get('thingsboard', 'host'), config.get('thingsboard', 'device_token'))
+    agent = Agent(thingsboard)
     agent.start_service()
 
 if __name__ == "__main__":
