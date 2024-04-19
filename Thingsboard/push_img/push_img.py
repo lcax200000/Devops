@@ -118,8 +118,6 @@ class ThingsboardRPC(PlatformInterface):
 def main():
     config = configparser.ConfigParser()
     config.read('push_img.conf')
-    config = configparser.ConfigParser()
-    config.read('push_img.conf')
     thingsboard = ThingsboardRPC(config.get('thingsboard', 'host'), config.get('thingsboard', 'device_token'))
     agent = Agent(thingsboard)
     agent.start_service()
