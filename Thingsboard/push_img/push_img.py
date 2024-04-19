@@ -18,8 +18,6 @@ class Agent:
     def __init__(self, conf: dict):
         self.thingsboard = ThingsboardRPC(conf['host'], conf['token'])
         self.isRunning = True
-    def start_service(self):
-        self.thingsboard.fetch_and_handle_rpc()
     def is_service_running(self) -> bool:
         return self.isRunning
 
@@ -118,7 +116,7 @@ def main():
     config = configparser.ConfigParser()
     config.read('push_img.conf')
     agent = Agent({'host': config.get('thingsboard', 'host'), 'token': config.get('thingsboard', 'device_token')})
-    agent.start_service()
+    agent.thingsboard.fetch_and_handle_rpc()
     while agent.is_service_running():
         time.sleep(3)
 
