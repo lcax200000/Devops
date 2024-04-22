@@ -13,6 +13,8 @@ from minio.error import S3Error
 class PlatformInterface:
     def fetch_and_handle_rpc(self):
         return
+    def stop(self):
+        return
 
 class Agent:
     def __init__(self, worker: PlatformInterface):
@@ -22,6 +24,9 @@ class Agent:
         self.worker.fetch_and_handle_rpc()
         while self.isRunning:
             time.sleep(3)
+    def stop_service(self):
+        self.worker.stop()
+        self.isRunning = False
 
 #####################################################################################
 #                                Thingsboard                                        #
@@ -110,6 +115,8 @@ class ThingsboardRPC(PlatformInterface):
     def fetch_and_handle_rpc(self):
         self.create_bucket(self.device_id)
         self.thingsboard_client.subscribe('rpc', self.callback)
+    def stop(self):
+        self.thingsboard_client.unsubscribe('rpc')
 
 #####################################################################################
 #                                Main                                               #
@@ -120,7 +127,10 @@ def main():
     config.read('push_img.conf')
     thingsboard = ThingsboardRPC(config.get('thingsboard', 'host'), config.get('thingsboard', 'device_token'))
     agent = Agent(thingsboard)
-    agent.start_service()
+    try:
+        agent.start_service()
+    except KeyboardInterrupt:
+        agent.stop_service()
 
 if __name__ == "__main__":
     main()
