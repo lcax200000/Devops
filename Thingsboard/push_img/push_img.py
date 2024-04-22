@@ -2,6 +2,8 @@ import time
 import configparser
 import base64
 from datetime import datetime
+from io import BytesIO
+
 from tb_device_http import TBHTTPDevice
 from PIL import ImageGrab
 from minio import Minio
@@ -76,9 +78,12 @@ class ThingsboardRPC(PlatformInterface):
             response_params['upload_result'] = 'success'
         else:
             response_params['upload_result'] = 'failed'
-        if get_image == True:
-            response_params['image'] = base64.b64encode(img.tobytes()).decode('utf-8')
         self.thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params=response_params)
+        if get_image == True:
+            buffered = BytesIO()
+            img.save(buffered, format="JPEG")
+            base64_data = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            self.thingsboard_client.send_attributes({'Image': base64_data})
 
     def callback(self, data):
         rpc_id = data['id']
@@ -115,6 +120,7 @@ class ThingsboardRPC(PlatformInterface):
     def fetch_and_handle_rpc(self):
         self.create_bucket(self.device_id)
         self.thingsboard_client.subscribe('rpc', self.callback)
+
     def stop(self):
         self.thingsboard_client.unsubscribe('rpc')
 
