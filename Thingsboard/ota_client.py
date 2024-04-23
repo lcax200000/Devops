@@ -184,6 +184,7 @@ class ThingsboardRPC(PlatformInterface):
     def release(self):
         os.remove(self.package_name)
         return
+
 def main():
     config = configparser.ConfigParser()
     config.read('ota_client.conf')
@@ -192,7 +193,6 @@ def main():
     thingsboard = ThingsboardRPC(config.get('thingsboard', 'host'), config.get('thingsboard', 'device_token'))
     agent = Agent(thingsboard)
     agent.start_service()
-
 
 if __name__ == "__main__":
     main()
