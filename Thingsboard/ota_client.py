@@ -16,6 +16,7 @@ TITLE_ATTR = "_title"
 VERSION_ATTR = "_version"
 STATE_ATTR = "_state"
 CHUNK_SIZE = 'chunk_size'
+
 class PlatformInterface:
     def get_ware_info(self, platform: int) -> dict:
         return {}
@@ -45,7 +46,6 @@ class Agent:
             except Exception as e:
                 print("Exception ", e)
                 traceback.print_stack()
-
     def stop_service(self):
         self.isRunning = False
         self.worker.release()
@@ -181,6 +181,7 @@ class ThingsboardRPC(PlatformInterface):
             print("Client error. Unsupported checksum algorithm.")
         print(checksum_of_received_firmware)
         return checksum_of_received_firmware == checksum
+
     def release(self):
         os.remove(self.package_name)
         return
