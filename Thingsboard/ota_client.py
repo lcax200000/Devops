@@ -101,7 +101,7 @@ class ThingsboardRPC(PlatformInterface):
             os.remove(self.package_name)
             return
         time.sleep(1)
-        print("UPDATING   ")
+        print("UPDATING")
         self.send_telemetry({OTA_PLATFORM[platform]+STATE_ATTR: "UPDATING"})
         time.sleep(1)
         self.current_ware_info[platform][f'current_{OTA_PLATFORM[platform]}{TITLE_ATTR}'] = ware_info.get(OTA_PLATFORM[platform] + TITLE_ATTR)
