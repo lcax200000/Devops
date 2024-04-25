@@ -413,6 +413,10 @@ class TBHTTPDevice:
                 print(f"Failed to response raise_for_status: {e} {response}")
             try:
                 callback(response.json())
+            except SystemExit:
+                raise
+            except OSError:
+                raise
             except Exception as e:
                 print(f"Failed to response callback: {e} {response}")
             time.sleep(.1)
