@@ -213,7 +213,7 @@ class ThingsboardRPC(PlatformInterface):
             current_title = ''
         current_version = client_attrs.get(VERSION_ATTR)
         if current_version == None:
-            current_version = 'v0.1'
+            current_version = 0.1
         return device_id, minio_host, minio_access, minio_secret, current_title, current_version
 
     def fetch_and_handle_rpc(self):
