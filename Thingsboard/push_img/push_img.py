@@ -55,6 +55,7 @@ class ThingsboardRPC(PlatformInterface):
             TITLE_ATTR: current_title,
             VERSION_ATTR: current_version
         }
+
     def create_bucket(self, bucket_name: str):
         try:
             if self.minio_client is not None and not self.minio_client.bucket_exists(bucket_name):
@@ -65,32 +66,24 @@ class ThingsboardRPC(PlatformInterface):
             print(f"An unexpected error occurred: {e}")
 
     def upload_to_minio(self, bucket_name: str, local_file_path: str, object_name: str):
-        success = False
         try:
             if self.minio_client is not None:
                 self.minio_client.fput_object(bucket_name, object_name, local_file_path)
-                success = True
         except S3Error as e:
             print(f"An S3Error occurred: {e}  {object_name}")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
-        return success
 
     def download_from_minio(self, bucket_name: str, file_name: str):
-        success = False
         try:
             if self.minio_client is not None:
                 image = self.minio_client.get_object(bucket_name, file_name)
                 with open(file_name, "wb") as file:
                     file.write(image.read())
-                success = True
         except S3Error as e:
-            success = False
             print(f"An S3Error occurred: {e}  {file_name}")
         except Exception as e:
-            success = False
             print(f"An unexpected error occurred: {e}")
-        return success
 
     def calculate_md5(self, file_path):
         md5 = hashlib.md5()
@@ -119,9 +112,8 @@ class ThingsboardRPC(PlatformInterface):
             self.thingsboard_client.send_telemetry({'message': 'package duplicate installation'}, queued=False)
             return
         self.thingsboard_client.send_telemetry({'state': 'DOWNLOADING', 'time': time.time()*1000}, queued=False)
-        res = self.download_from_minio(bucket, file_name)
-        md5_res = self.download_from_minio(bucket, file_name + '.md5')
-        if res == False:
+        self.download_from_minio(bucket, file_name)
+        if not os.path.exists(file_name):
             self.thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params={'result': 'failed'})
             self.thingsboard_client.send_telemetry({'message': 'download failed'}, queued=False)
             return
@@ -129,7 +121,8 @@ class ThingsboardRPC(PlatformInterface):
         time.sleep(1)
         self.thingsboard_client.send_telemetry({'state': 'DOWNLOADED'}, queued=False)
         time.sleep(1)
-        if md5_res:
+        self.download_from_minio(bucket, file_name + '.md5')
+        if os.path.exists(file_name + '.md5'):
             with open(file_name + '.md5', "r") as f:
                 expected_md5 = f.read().strip()
             if not self.verify_md5(file_name, expected_md5):
@@ -155,14 +148,10 @@ class ThingsboardRPC(PlatformInterface):
         now = datetime.now()
         formatted_time = now.strftime("%Y%m%d%H%M%S")
         filename = f"{formatted_time}_{self.device_id}.jpg"
-        res = self.upload_to_minio(self.device_id, 'screenshot.jpg', filename)
+        self.upload_to_minio(self.device_id, 'screenshot.jpg', filename)
         response_params = {}
-        if res == True:
-            response_params['filename'] = filename
-            response_params['bucket'] = self.device_id
-            response_params['upload_result'] = 'success'
-        else:
-            response_params['upload_result'] = 'failed'
+        response_params['filename'] = filename
+        response_params['bucket'] = self.device_id
         self.thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params=response_params)
         if get_image == True:
             buffered = BytesIO()

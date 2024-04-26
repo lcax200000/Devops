@@ -86,7 +86,7 @@ class CallHandler:
         if response.status_code == 200:
             params = response.json().get('params')
             print(f'response {params}')
-            if params.get("upload_result") == "success" and "filename" in params and "bucket" in params:
+            if "filename" in params and "bucket" in params:
                 filename = params.get("filename")
                 bucket_name = params.get("bucket")
                 self.download_from_minio(bucket_name, filename)
