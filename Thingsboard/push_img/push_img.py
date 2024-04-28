@@ -3,13 +3,17 @@ import time
 import configparser
 import base64
 import hashlib
+import schedule
 from datetime import datetime
 from io import BytesIO
 from tb_device_http import TBHTTPDevice
-from PIL import ImageGrab
+from PIL import ImageGrab, Image
 from minio import Minio
 from minio.error import S3Error
+from abc import ABC, abstractmethod
+from enum import Enum
 
+PhotographMode = Enum('PhotographMode', ('OnceCapture', 'IntervalCapture'))
 TITLE_ATTR = "push_img_title"
 VERSION_ATTR = "push_img_version"
 
@@ -22,6 +26,11 @@ class PlatformInterface:
     def stop(self):
         return
 
+class Photograph(ABC):
+    @abstractmethod
+    def take_photo(self):
+        pass
+
 class Agent:
     def __init__(self, worker: PlatformInterface):
         self.worker = worker
@@ -29,7 +38,8 @@ class Agent:
     def start_service(self):
         self.worker.fetch_and_handle_rpc()
         while self.isRunning:
-            time.sleep(3)
+            schedule.run_pending()
+            time.sleep(1)
     def stop_service(self):
         self.worker.stop()
         self.isRunning = False
@@ -38,7 +48,7 @@ class Agent:
 #                                Thingsboard                                        #
 #####################################################################################
 class ThingsboardRPC(PlatformInterface):
-    def __init__(self, host: str, token: str):
+    def __init__(self, host: str, token: str, photograph: Photograph):
         self.thingsboard_client = TBHTTPDevice(f'http://{host}', token)
         self.thingsboard_client._TBHTTPDevice__config.update({'timeout': 10})
         self.device_id, minio_host, minio_access, minio_secret, current_title, current_version = self.get_metadata()
@@ -55,24 +65,26 @@ class ThingsboardRPC(PlatformInterface):
             TITLE_ATTR: current_title,
             VERSION_ATTR: current_version
         }
+        self.photograph = photograph
+        self.photograph_mode = PhotographMode.OnceCapture
 
     def create_bucket(self, bucket_name: str):
         try:
             if self.minio_client is not None and not self.minio_client.bucket_exists(bucket_name):
                 self.minio_client.make_bucket(bucket_name)
         except S3Error as e:
-            print(f"An S3Error occurred: {e}  {bucket_name}")
+            print(f"{datetime.now()} An S3Error occurred: {e}  {bucket_name}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print(f"{datetime.now()} An unexpected error occurred: {e}")
 
     def upload_to_minio(self, bucket_name: str, local_file_path: str, object_name: str):
         try:
             if self.minio_client is not None:
                 self.minio_client.fput_object(bucket_name, object_name, local_file_path)
         except S3Error as e:
-            print(f"An S3Error occurred: {e}  {object_name}")
+            print(f"{datetime.now()} An S3Error occurred: {e}  {object_name}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print(f"{datetime.now()} An unexpected error occurred: {e}")
 
     def download_from_minio(self, bucket_name: str, file_name: str):
         try:
@@ -81,9 +93,9 @@ class ThingsboardRPC(PlatformInterface):
                 with open(file_name, "wb") as file:
                     file.write(image.read())
         except S3Error as e:
-            print(f"An S3Error occurred: {e}  {file_name}")
+            print(f"{datetime.now()} An S3Error occurred: {e}  {file_name}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print(f"{datetime.now()} An unexpected error occurred: {e}")
 
     def calculate_md5(self, file_path):
         md5 = hashlib.md5()
@@ -107,7 +119,7 @@ class ThingsboardRPC(PlatformInterface):
 
     def upgrade(self, rpc_id: int, bucket: str, file_name: str, version: float):
         self.thingsboard_client.send_telemetry({'target_title': file_name, 'target_version': version, 'message': ''}, queued=False)
-        if self.check_update(file_name, version) == False:
+        if self.check_update(file_name, version) is False:
             self.thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params={'result': 'success'})
             self.thingsboard_client.send_telemetry({'message': 'package duplicate installation'}, queued=False)
             return
@@ -142,49 +154,59 @@ class ThingsboardRPC(PlatformInterface):
         self.stop()
         os._exit(0)
 
-    def take_picture(self, rpc_id: int, get_image: bool):
-        img = ImageGrab.grab()
+    def take_picture(self, get_image: bool, bucket: str = ''):
+        img = self.photograph.take_photo()
         img.save('screenshot.jpg')
         now = datetime.now()
         formatted_time = now.strftime("%Y%m%d%H%M%S")
         filename = f"{formatted_time}_{self.device_id}.jpg"
-        self.upload_to_minio(self.device_id, 'screenshot.jpg', filename)
-        response_params = {}
-        response_params['filename'] = filename
-        response_params['bucket'] = self.device_id
-        self.thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params=response_params)
-        if get_image == True:
+        self.upload_to_minio(bucket if bucket else self.device_id, 'screenshot.jpg', filename)
+        if get_image:
             buffered = BytesIO()
             img.save(buffered, format="JPEG")
             base64_data = base64.b64encode(buffered.getvalue()).decode('utf-8')
-            self.thingsboard_client.send_attributes({'Image': base64_data})
+            self.thingsboard_client.send_telemetry({'Image': base64_data})
+        return filename
 
     def callback(self, data):
         rpc_id = data['id']
         method = data['method']
         if method == 'TakePicture':
+            if self.photograph_mode is not PhotographMode.OnceCapture:
+                self.photograph_mode = PhotographMode.OnceCapture
+                schedule.clear()
             get_image = False
             if "getImage" in data['params']:
                 get_image = data['params'].get("getImage")
-            self.take_picture(rpc_id, get_image)
+            filename = self.take_picture(get_image)
+            response_params = {'filename': filename, 'bucket': self.device_id}
+            self.thingsboard_client.send_rpc(name='rpc_response', rpc_id=rpc_id, params=response_params)
         elif method == 'Upgrade':
             bucket = data['params'].get("bucket")
             file_name = data['params'].get("filename")
             version = data['params'].get("version")
             self.upgrade(rpc_id, bucket, file_name, version)
+        elif method == 'IntervalTakePicture':
+                interval = data['params'].get("interval")
+            bucket = data['params'].get("bucket")
+            if self.photograph_mode is not PhotographMode.IntervalCapture:
+                self.photograph_mode = PhotographMode.IntervalCapture
+            else:
+                schedule.clear()
+            schedule.every(interval).seconds.do(self.take_picture, get_image=True, bucket=bucket)
         else:
-            print(f"undefined method {method}")
-        print(f'{method} rpc over')
+            print(f"{datetime.now()} undefined method {method}")
+        print(f'{datetime.now()} {method} rpc over')
 
     def get_metadata(self):
         client_keys = [TITLE_ATTR, VERSION_ATTR]
         shared_keys = ['device_id', 'minio_host', 'minio_access', 'minio_secret', TITLE_ATTR, VERSION_ATTR]
         data = self.thingsboard_client.request_attributes(client_keys=client_keys, shared_keys=shared_keys)
         shared_attrs = data.get('shared')
-        if shared_attrs == None:
+        if shared_attrs is None:
             raise ValueError("shared attribute does not exist")
         device_id = shared_attrs.get('device_id')
-        if device_id == None:
+        if device_id is None:
             raise ValueError("device_id does not exist")
         minio_host = shared_attrs.get('minio_host')
         # if minio_host == None:
@@ -198,10 +220,10 @@ class ThingsboardRPC(PlatformInterface):
 
         client_attrs = data.get('client')
         current_title = client_attrs.get(TITLE_ATTR)
-        if current_title == None:
+        if current_title is None:
             current_title = ''
         current_version = client_attrs.get(VERSION_ATTR)
-        if current_version == None:
+        if current_version is None:
             current_version = 0.1
         return device_id, minio_host, minio_access, minio_secret, current_title, current_version
 
@@ -214,6 +236,9 @@ class ThingsboardRPC(PlatformInterface):
         self.thingsboard_client.stop_publish_worker()
         self.thingsboard_client.unsubscribe('rpc')
 
+class Snapshot(Photograph):
+    def take_photo(self) -> Image:
+        return ImageGrab.grab()
 #####################################################################################
 #                                Main                                               #
 #####################################################################################
@@ -221,7 +246,7 @@ class ThingsboardRPC(PlatformInterface):
 def main():
     config = configparser.ConfigParser()
     config.read('push_img.conf')
-    thingsboard = ThingsboardRPC(config.get('thingsboard', 'host'), config.get('thingsboard', 'device_token'))
+    thingsboard = ThingsboardRPC(config.get('thingsboard', 'host'), config.get('thingsboard', 'device_token'), Snapshot())
     agent = Agent(thingsboard)
     try:
         agent.start_service()
