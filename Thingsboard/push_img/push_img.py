@@ -187,7 +187,7 @@ class ThingsboardRPC(PlatformInterface):
             version = data['params'].get("version")
             self.upgrade(rpc_id, bucket, file_name, version)
         elif method == 'IntervalTakePicture':
-                interval = data['params'].get("interval")
+            interval = data['params'].get("interval")
             bucket = data['params'].get("bucket")
             if self.photograph_mode is not PhotographMode.IntervalCapture:
                 self.photograph_mode = PhotographMode.IntervalCapture
